@@ -78,4 +78,34 @@ describe('TaktPlugin', () => {
     install(app, { domain: 'exemple.fr', track404: true })
     expect(enable404).toHaveBeenCalledTimes(1)
   })
+  it('forwards redactRoutes, routeTemplates and routeTemplate to the core', () => {
+    const app = fakeApp()
+    const routeTemplate = () => '/users/:id'
+    install(app, { domain: 'exemple.fr', redactRoutes: ['/verify/:token'], routeTemplates: true, routeTemplate })
+    expect(createTakt).toHaveBeenCalledWith({ domain: 'exemple.fr', redactRoutes: ['/verify/:token'], routeTemplates: true, routeTemplate })
+  })
+
+  it('derives routeTemplate from the router option when routeTemplates is on', () => {
+    const app = fakeApp()
+    const router = { currentRoute: { value: { matched: [{ path: '/users' }, { path: '/users/:id' }] } } }
+    install(app, { domain: 'exemple.fr', routeTemplates: true, router })
+    const [config] = createTakt.mock.calls[0] as unknown as [{ routeTemplate?: () => string | null; router?: unknown }]
+    expect(config.router).toBeUndefined()
+    expect(config.routeTemplate?.()).toBe('/users/:id')
+  })
+
+  it('keeps an explicit routeTemplate over the router option', () => {
+    const app = fakeApp()
+    const routeTemplate = () => '/explicit'
+    const router = { currentRoute: { value: { matched: [{ path: '/users/:id' }] } } }
+    install(app, { domain: 'exemple.fr', routeTemplates: true, routeTemplate, router })
+    expect(createTakt).toHaveBeenCalledWith({ domain: 'exemple.fr', routeTemplates: true, routeTemplate })
+  })
+
+  it('ignores the router option when routeTemplates is off', () => {
+    const app = fakeApp()
+    const router = { currentRoute: { value: { matched: [{ path: '/users/:id' }] } } }
+    install(app, { domain: 'exemple.fr', router })
+    expect(createTakt).toHaveBeenCalledWith({ domain: 'exemple.fr' })
+  })
 })
