@@ -18,13 +18,13 @@
     "vue3",
     "takt"
   ],
-  "homepage": "https://github.com/vskstudio/takt-vue#readme",
+  "homepage": "https://github.com/taktlytics/takt-vue#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vskstudio/takt-vue.git"
+    "url": "git+https://github.com/taktlytics/takt-vue.git"
   },
   "bugs": {
-    "url": "https://github.com/vskstudio/takt-vue/issues"
+    "url": "https://github.com/taktlytics/takt-vue/issues"
   },
   "publishConfig": {
     "access": "public"

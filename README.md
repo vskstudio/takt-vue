@@ -5,7 +5,7 @@
 
 > 📚 **Documentation** — [taktlytics.com/docs/wrappers/vue](https://taktlytics.com/docs/wrappers/vue)
 
-**Idiomatic Vue 3 wrapper for [Takt](https://github.com/vskstudio/takt-core) privacy-friendly analytics.**
+**Idiomatic Vue 3 wrapper for [Takt](https://github.com/taktlytics/takt-core) privacy-friendly analytics.**
 
 [![npm version](https://img.shields.io/npm/v/@vskstudio/takt-vue?color=42b883&logo=npm)](https://www.npmjs.com/package/@vskstudio/takt-vue)
 [![vue 3](https://img.shields.io/badge/vue-3-42b883?logo=vuedotjs&logoColor=fff)](https://vuejs.org)
