@@ -30,7 +30,7 @@ A thin, SSR-safe Vue 3 layer over [`@vskstudio/takt-core`](https://www.npmjs.com
 pnpm add @vskstudio/takt-vue @vskstudio/takt-core
 ```
 
-`vue` (`^3.3.0`) and `@vskstudio/takt-core` (`>=0.8.1`) are peer dependencies.
+`vue` (`^3.3.0`) and `@vskstudio/takt-core` (`>=0.9.0`) are peer dependencies.
 
 ## Quick start — component + composable
 
@@ -69,11 +69,13 @@ function onSignup() {
 
 `useTakt()` resolves the instance and never throws: when none is available yet it returns a no-op that swallows every call and warns once in the console.
 
+Consent calls are the exception: on the no-op, `optOut()`, `optIn()` and `isOptedOut()` delegate to the core module functions, which read and write the `takt_ignore` localStorage flag directly. A cookie banner can record the visitor's choice before `<Takt>` has mounted, and the instance created later honours it.
+
 `<Takt>` only publishes its instance in `onMounted`, which runs **after** the `setup` of its descendants. So `const takt = useTakt()` at the top of a child `setup` captures the no-op and keeps it forever — resolve the instance at call time instead (in the event handler, or in an `onMounted` hook of your own). The one exception is `app.use(TaktPlugin, options)`: it creates the instance synchronously during install, before anything mounts, so a `setup`-level `useTakt()` already sees the live instance in that setup.
 
 ### Component props
 
-All 16 props below are forwarded to the core; core's `debug` is the only option `<Takt>` does not expose.
+All 17 props below are forwarded to the core.
 
 | Prop | Type | Default | Effect |
 | --- | --- | --- | --- |
@@ -87,12 +89,39 @@ All 16 props below are forwarded to the core; core's `debug` is the only option 
 | `respectDnt` | `boolean` | `true` | Suppress events when Do Not Track is on |
 | `excludeLocalhost` | `boolean` | `true` | Suppress events on localhost / private IPs |
 | `enabled` | `boolean` | `true` | Master kill-switch — set to `false` to disable all tracking without removing the component |
+| `debug` | `boolean` | `false` | Log each payload to the console (`console.debug`) before sending it |
 | `sampleRate` | `number` | `1` | Fraction of sessions to track (0–1) |
 | `trackQuery` | `boolean` | `false` | Include the query string in tracked URLs |
 | `queryParams` | `string[]` | — | Query parameters to preserve when `trackQuery` is false |
 | `exclude` | `string[]` | — | Path prefixes never tracked, e.g. `['/app', '/account']` (segment-bounded, checked at send time) |
-| `scrubUrl` | `(url: string) => string` | — | Transform the URL before it is sent (function prop / dev-controlled only — cannot be set as an HTML attribute on `<takt-analytics>`) |
+| `scrubUrl` | `(url: string) => string` | — | Transform each URL before it is sent: the page URL and the `props.url` of outbound clicks and file downloads. Function prop only, it cannot be set as an HTML attribute on `<takt-analytics>` |
 | `tagged` | `boolean` | `false` | Auto-track clicks on elements carrying `data-takt-event="Name"` (props read from `data-takt-prop-*`) |
+
+## Consent
+
+`optOut`, `optIn` and `isOptedOut` are exported from the package root (and from `./directives`). They need no instance, so a consent banner can use them anywhere, before or after `<Takt>` mounts:
+
+```vue
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { optOut, optIn, isOptedOut } from '@vskstudio/takt-vue'
+
+const optedOut = ref(false)
+onMounted(() => { optedOut.value = isOptedOut() })
+
+function toggle() {
+  if (optedOut.value) optIn()
+  else optOut()
+  optedOut.value = isOptedOut()
+}
+</script>
+
+<template>
+  <button @click="toggle">{{ optedOut ? 'Accepter la mesure' : 'Refuser la mesure' }}</button>
+</template>
+```
+
+`isOptedOut()` reads localStorage, so call it in the browser (`onMounted` or an event handler) when the component is server-rendered.
 
 ## Declarative tracking — `v-takt-event`
 
@@ -117,7 +146,7 @@ import { vTaktEvent } from '@vskstudio/takt-vue'
 The directive and the core functions are also available from the `./directives` subpath if you prefer a functional import:
 
 ```ts
-import { vTaktEvent, init, track, pageview, optOut, optIn } from '@vskstudio/takt-vue/directives'
+import { vTaktEvent, init, track, pageview, optOut, optIn, isOptedOut } from '@vskstudio/takt-vue/directives'
 ```
 
 ## Plugin install
@@ -134,7 +163,7 @@ createApp(App)
   .mount('#app')
 ```
 
-Options are the core `Config` plus `outbound`, `files`, `spa` (default `true`) and `track404` — `tagged` is component-only. The instance is created synchronously during install and lives for the app's lifetime (its autocapture disposers are not retained; use `<Takt>` when you need scoped teardown).
+Options are the core `Config` (including `debug`) plus `outbound`, `files`, `spa` (default `true`) and `track404`. `tagged` is component-only. The instance is created synchronously during install and lives for the app's lifetime (its autocapture disposers are not retained; use `<Takt>` when you need scoped teardown).
 
 Installing without options registers only the directive and the widget components — use `<Takt>` for instance lifecycle in that case. Instance bootstrapping is also skipped on the server.
 
@@ -158,6 +187,7 @@ import '@vskstudio/takt-vue/element'
 | `respect-dnt` | `respectDnt` | On unless `"false"` / `"0"` |
 | `exclude-localhost` | `excludeLocalhost` | On unless `"false"` / `"0"` |
 | `enabled` | `enabled` | Only read when the attribute is present |
+| `debug` | `debug` | Only read when the attribute is present; `debug="false"` forces it back off |
 | `sample-rate` | `sampleRate` | Ignored when not a number |
 | `track-query` | `trackQuery` | Only read when the attribute is present |
 | `query-params` | `queryParams` | Comma-separated list |
