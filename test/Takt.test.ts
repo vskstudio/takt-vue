@@ -9,7 +9,7 @@ const { enableSpa, enableOutbound, enableFiles, enable404, enableTagged, pagevie
   const enable404 = vi.fn(() => vi.fn())
   const enableTagged = vi.fn(() => vi.fn())
   const pageview = vi.fn()
-  const instance = { enableSpa, enableOutbound, enableFiles, enable404, enableTagged, pageview, track: vi.fn(), optOut: vi.fn(), optIn: vi.fn() }
+  const instance = { enableSpa, enableOutbound, enableFiles, enable404, enableTagged, pageview, track: vi.fn(), optOut: vi.fn(), optIn: vi.fn(), isOptedOut: vi.fn(() => false) }
   const createTakt = vi.fn(() => instance)
   return { enableSpa, enableOutbound, enableFiles, enable404, enableTagged, pageview, createTakt }
 })
@@ -51,6 +51,16 @@ describe('<Takt>', () => {
   it('honors enabled=false as an explicit kill-switch', () => {
     mount(Takt, { props: { domain: 'exemple.fr', endpoint: '/api/event', enabled: false } })
     expect(createTakt).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }))
+  })
+
+  it('defaults debug to false when the prop is absent', () => {
+    mount(Takt, { props: { domain: 'exemple.fr' } })
+    expect(createTakt).toHaveBeenCalledWith(expect.objectContaining({ debug: false }))
+  })
+
+  it('forwards debug to the core', () => {
+    mount(Takt, { props: { domain: 'exemple.fr', debug: true } })
+    expect(createTakt).toHaveBeenCalledWith(expect.objectContaining({ debug: true, enabled: true }))
   })
 
   it('forwards scriptOrigin to the core', () => {

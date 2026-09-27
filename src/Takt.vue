@@ -26,6 +26,7 @@ interface Props {
   excludeLocalhost?: boolean
   /** Master kill-switch: set to `false` to disable all tracking without removing the component. */
   enabled?: boolean
+  debug?: boolean
   /** Fraction of sessions to track (0–1). Defaults to 1 (all sessions). */
   sampleRate?: number
   /** Include the query string in tracked URLs. */
@@ -49,14 +50,15 @@ const props = withDefaults(defineProps<Props>(), {
   excludeLocalhost: true,
   // Vue caste un prop Boolean absent en `false` ; sans ce défaut le kill-switch s'activerait tout seul.
   enabled: true,
+  debug: false,
 })
 
 const store = provideTakt()
 let disposers: VoidFunction[] = []
 
 onMounted(() => {
-  const { domain, endpoint, scriptOrigin, respectDnt, excludeLocalhost, spa, outbound, files, track404, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl, tagged } = props
-  const takt = createTakt({ domain, endpoint, scriptOrigin, respectDnt, excludeLocalhost, enabled, sampleRate, trackQuery, queryParams, exclude, scrubUrl })
+  const { domain, endpoint, scriptOrigin, respectDnt, excludeLocalhost, spa, outbound, files, track404, enabled, debug, sampleRate, trackQuery, queryParams, exclude, scrubUrl, tagged } = props
+  const takt = createTakt({ domain, endpoint, scriptOrigin, respectDnt, excludeLocalhost, enabled, debug, sampleRate, trackQuery, queryParams, exclude, scrubUrl })
   if (spa) disposers.push(takt.enableSpa())
   if (outbound) disposers.push(takt.enableOutbound())
   if (files) disposers.push(takt.enableFiles(Array.isArray(files) ? files : undefined))
