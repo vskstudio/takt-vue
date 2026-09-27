@@ -1,3 +1,4 @@
+import { optOut, optIn, isOptedOut } from '@vskstudio/takt-core'
 import type { TaktInstance } from './store'
 
 let warned = false
@@ -21,8 +22,9 @@ export function noopTakt(): TaktInstance {
   const instance: TaktSurface = {
     track: noop,
     pageview: noop,
-    optOut: noop,
-    optIn: noop,
+    optOut,
+    optIn,
+    isOptedOut,
     enableSpa: disposer,
     enableOutbound: disposer,
     enableFiles: disposer,

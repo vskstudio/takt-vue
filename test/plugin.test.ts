@@ -6,7 +6,7 @@ const { enableSpa, enableOutbound, enableFiles, enable404, pageview, createTakt 
   const enableFiles = vi.fn(() => vi.fn())
   const enable404 = vi.fn(() => vi.fn())
   const pageview = vi.fn()
-  const instance = { enableSpa, enableOutbound, enableFiles, enable404, pageview, track: vi.fn(), optOut: vi.fn(), optIn: vi.fn() }
+  const instance = { enableSpa, enableOutbound, enableFiles, enable404, pageview, track: vi.fn(), optOut: vi.fn(), optIn: vi.fn(), isOptedOut: vi.fn(() => false) }
   const createTakt = vi.fn(() => instance)
   return { enableSpa, enableOutbound, enableFiles, enable404, pageview, createTakt }
 })
@@ -65,6 +65,12 @@ describe('TaktPlugin', () => {
     expect(enable404).not.toHaveBeenCalled()
     expect(pageview).toHaveBeenCalledTimes(1)
     expect(taktStore.value).not.toBeNull()
+  })
+
+  it('forwards debug to the core', () => {
+    const app = fakeApp()
+    install(app, { domain: 'exemple.fr', debug: true })
+    expect(createTakt).toHaveBeenCalledWith({ domain: 'exemple.fr', debug: true })
   })
 
   it('enables 404 tracking when track404 is set', () => {

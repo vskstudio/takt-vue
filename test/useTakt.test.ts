@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { isOptedOut } from '@vskstudio/takt-core'
 import { taktStore, resolveTakt, type TaktInstance } from '../src/store'
 import { useTakt } from '../src/useTakt'
 
@@ -52,6 +53,7 @@ describe('store / useTakt', () => {
       'pageview',
       'optOut',
       'optIn',
+      'isOptedOut',
       'enableSpa',
       'enableOutbound',
       'enableFiles',
@@ -59,5 +61,39 @@ describe('store / useTakt', () => {
       'enableTagged',
     ] as const
     for (const method of surface) expect(typeof takt[method]).toBe('function')
+  })
+})
+
+function memoryStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> {
+  const entries = new Map<string, string>()
+  return {
+    getItem: (key) => entries.get(key) ?? null,
+    setItem: (key, value) => void entries.set(key, String(value)),
+    removeItem: (key) => void entries.delete(key),
+  }
+}
+
+describe('no-op consent', () => {
+  beforeEach(() => {
+    taktStore.value = null
+    vi.stubGlobal('localStorage', memoryStorage())
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('optOut() and optIn() write the core consent before any instance exists', () => {
+    const takt = useTakt()
+    takt.optOut()
+    expect(isOptedOut()).toBe(true)
+    expect(takt.isOptedOut()).toBe(true)
+    takt.optIn()
+    expect(isOptedOut()).toBe(false)
+    expect(takt.isOptedOut()).toBe(false)
+  })
+
+  it('isOptedOut() reads the core consent', () => {
+    localStorage.setItem('takt_ignore', '1')
+    expect(useTakt().isOptedOut()).toBe(true)
+    localStorage.removeItem('takt_ignore')
+    expect(useTakt().isOptedOut()).toBe(false)
   })
 })
