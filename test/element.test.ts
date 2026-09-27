@@ -109,6 +109,18 @@ describe('<takt-analytics> boot behavior', () => {
     )
   })
 
+  it('parses redact-routes as a comma-separated list', async () => {
+    await boot({ domain: 'exemple.fr', 'redact-routes': '/verify/:token, /reset/[code] ,' })
+    expect(createTakt).toHaveBeenCalledWith(
+      expect.objectContaining({ redactRoutes: ['/verify/:token', '/reset/[code]'] }),
+    )
+  })
+
+  it('omits redactRoutes when the attribute is absent', async () => {
+    await boot({ domain: 'exemple.fr' })
+    expect(createTakt).toHaveBeenCalledWith(expect.not.objectContaining({ redactRoutes: expect.anything() }))
+  })
+
   it('on disconnect: collected disposers run', async () => {
     const spaDispose = vi.fn()
     enableSpa.mockReturnValueOnce(spaDispose)

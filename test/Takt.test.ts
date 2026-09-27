@@ -114,4 +114,37 @@ describe('<Takt>', () => {
     const wrapper = mount(Takt, { slots: { default: '<p>child</p>' } })
     expect(wrapper.html()).toContain('child')
   })
+  it('forwards redactRoutes, routeTemplates and routeTemplate to the core', () => {
+    const routeTemplate = () => '/users/:id'
+    mount(Takt, { props: { domain: 'exemple.fr', redactRoutes: ['/verify/:token'], routeTemplates: true, routeTemplate } })
+    expect(createTakt).toHaveBeenCalledWith(
+      expect.objectContaining({ redactRoutes: ['/verify/:token'], routeTemplates: true, routeTemplate }),
+    )
+  })
+
+  it('defaults routeTemplates to false when the prop is absent', () => {
+    mount(Takt, { props: { domain: 'exemple.fr' } })
+    expect(createTakt).toHaveBeenCalledWith(expect.objectContaining({ routeTemplates: false, routeTemplate: undefined }))
+  })
+
+  it('derives routeTemplate from the router prop when routeTemplates is on', () => {
+    const router = { currentRoute: { value: { matched: [{ path: '/users' }, { path: '/users/:id' }] } } }
+    mount(Takt, { props: { domain: 'exemple.fr', routeTemplates: true, router } })
+    const [config] = createTakt.mock.calls[0] as unknown as [{ routeTemplate?: () => string | null; router?: unknown }]
+    expect(config.router).toBeUndefined()
+    expect(config.routeTemplate?.()).toBe('/users/:id')
+  })
+
+  it('keeps an explicit routeTemplate over the router prop', () => {
+    const routeTemplate = () => '/explicit'
+    const router = { currentRoute: { value: { matched: [{ path: '/users/:id' }] } } }
+    mount(Takt, { props: { domain: 'exemple.fr', routeTemplates: true, routeTemplate, router } })
+    expect(createTakt).toHaveBeenCalledWith(expect.objectContaining({ routeTemplate }))
+  })
+
+  it('ignores the router prop when routeTemplates is off', () => {
+    const router = { currentRoute: { value: { matched: [{ path: '/users/:id' }] } } }
+    mount(Takt, { props: { domain: 'exemple.fr', router } })
+    expect(createTakt).toHaveBeenCalledWith(expect.objectContaining({ routeTemplate: undefined }))
+  })
 })

@@ -2,6 +2,7 @@ import type { App, Plugin } from 'vue'
 import { createTakt, type Config } from '@vskstudio/takt-core'
 import { vTaktEvent } from './directives/vTaktEvent'
 import { taktStore } from './store'
+import { resolveRouteTemplate, type RouterLike } from './routeTemplate'
 import TaktBadge from './TaktBadge.vue'
 import TaktEmbed from './TaktEmbed.vue'
 
@@ -14,6 +15,7 @@ export interface TaktPluginOptions extends Config {
   spa?: boolean
   /** Report a `404` event when the page is an error page (`[data-takt-404]` / `<meta name="takt:404">` marker, or a 404 HTTP status). */
   track404?: boolean
+  router?: RouterLike
 }
 
 // Type the globally-registered `v-takt-event` directive in consumer templates
@@ -37,8 +39,9 @@ export const TaktPlugin: Plugin<[TaktPluginOptions?]> = {
     app.component('TaktEmbed', TaktEmbed)
     if (!options || typeof window === 'undefined') return
 
-    const { outbound = false, files = false, spa = true, track404 = false, ...config } = options
-    const takt = createTakt(config)
+    const { outbound = false, files = false, spa = true, track404 = false, router, ...config } = options
+    const routeTemplate = resolveRouteTemplate(config.routeTemplates, config.routeTemplate, router)
+    const takt = createTakt(routeTemplate ? { ...config, routeTemplate } : config)
     // The bootstrapped instance lives for the app's lifetime; its autocapture
     // disposers are intentionally not retained (use <Takt> for scoped teardown).
     if (spa) takt.enableSpa()

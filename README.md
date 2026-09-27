@@ -75,7 +75,7 @@ Consent calls are the exception: on the no-op, `optOut()`, `optIn()` and `isOpte
 
 ### Component props
 
-All 17 props below are forwarded to the core.
+All props below except `router` are forwarded to the core; `router` only feeds `routeTemplate`.
 
 | Prop | Type | Default | Effect |
 | --- | --- | --- | --- |
@@ -95,6 +95,10 @@ All 17 props below are forwarded to the core.
 | `queryParams` | `string[]` | — | Query parameters to preserve when `trackQuery` is false |
 | `exclude` | `string[]` | — | Path prefixes never tracked, e.g. `['/app', '/account']` (segment-bounded, checked at send time) |
 | `scrubUrl` | `(url: string) => string` | — | Transform each URL before it is sent: the page URL and the `props.url` of outbound clicks and file downloads. Function prop only, it cannot be set as an HTML attribute on `<takt-analytics>` |
+| `redactRoutes` | `string[]` |  | Sensitive route patterns: a matching path is sent as the pattern, e.g. `['/verify/:token']` turns `/verify/abc` into `/verify/:token` (see [Route redaction](#route-redaction)) |
+| `routeTemplates` | `boolean` | `false` | Send every page as its route template instead of its real path |
+| `routeTemplate` | `() => string \| null \| undefined` |  | Resolver of the current route template, read only when `routeTemplates` is on |
+| `router` | `RouterLike` |  | A Vue Router instance; when `routeTemplates` is on and no `routeTemplate` is given, `vueRouterTemplate(router)` is used |
 | `tagged` | `boolean` | `false` | Auto-track clicks on elements carrying `data-takt-event="Name"` (props read from `data-takt-prop-*`) |
 
 ## Consent
@@ -163,9 +167,37 @@ createApp(App)
   .mount('#app')
 ```
 
-Options are the core `Config` (including `debug`) plus `outbound`, `files`, `spa` (default `true`) and `track404`. `tagged` is component-only. The instance is created synchronously during install and lives for the app's lifetime (its autocapture disposers are not retained; use `<Takt>` when you need scoped teardown).
+Options are the core `Config` (including `debug`, `redactRoutes`, `routeTemplates` and `routeTemplate`) plus `outbound`, `files`, `spa` (default `true`), `track404` and `router`. `tagged` is component-only. The instance is created synchronously during install and lives for the app's lifetime (its autocapture disposers are not retained; use `<Takt>` when you need scoped teardown).
 
 Installing without options registers only the directive and the widget components — use `<Takt>` for instance lifecycle in that case. Instance bootstrapping is also skipped on the server.
+
+## Route redaction
+
+Query strings are stripped by default, but path segments are sent as they are: `/verify/abc123` leaks the token. List the sensitive routes with `redactRoutes` and a matching path is sent as its pattern, while every other page keeps its real path:
+
+```ts
+createApp(App)
+  .use(TaktPlugin, { domain: 'example.com', redactRoutes: ['/verify/:token', '/reset/:code'] })
+  .mount('#app')
+```
+
+Patterns accept the Vue Router syntax (`:param`, `:param?`, `*`, `**`) as well as the bracket syntax (`[param]`, `[[optional]]`, `[...rest]`). The rule also covers same-origin referrers, outbound and download links, and 404 paths.
+
+For a fully private app, `routeTemplates: true` sends every page as its route template (`/users/42` becomes `/users/:id`). Pass your router and the plugin reads the matched route for you:
+
+```ts
+import { createApp } from 'vue'
+import { TaktPlugin } from '@vskstudio/takt-vue'
+import { router } from './router'
+import App from './App.vue'
+
+createApp(App)
+  .use(router)
+  .use(TaktPlugin, { domain: 'example.com', routeTemplates: true, router })
+  .mount('#app')
+```
+
+The same works on the component, `<Takt domain="example.com" route-templates :router="router">`. Under the hood it uses `vueRouterTemplate(router)`, exported from the package root, which returns the `path` of the deepest matched record (Vue Router already stores it as the full normalized path, e.g. `/users/:id`). Pass your own `routeTemplate` resolver to override it. The helper is typed structurally, so the package does not depend on `vue-router`. On a public site this mode merges every article into one row, so prefer `redactRoutes` there.
 
 ## Custom element (no Vue required)
 
@@ -192,6 +224,7 @@ import '@vskstudio/takt-vue/element'
 | `track-query` | `trackQuery` | Only read when the attribute is present |
 | `query-params` | `queryParams` | Comma-separated list |
 | `exclude` | `exclude` | Comma-separated list |
+| `redact-routes` | `redactRoutes` | Comma-separated list of route patterns; no `routeTemplates` mode, since the element has no router |
 | `spa` | `enableSpa()` | On unless `"false"` / `"0"` |
 | `outbound` | `enableOutbound()` | Presence flag |
 | `files` | `enableFiles()` | Presence flag, no extension allowlist (use `<Takt>` for that) |

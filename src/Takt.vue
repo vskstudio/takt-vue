@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
-import { createTakt } from '@vskstudio/takt-core'
+import { createTakt, type RouteTemplateResolver } from '@vskstudio/takt-core'
 import { provideTakt, taktStore } from './store'
+import { resolveRouteTemplate, type RouterLike } from './routeTemplate'
 
 defineOptions({ name: 'Takt' })
 
@@ -37,6 +38,10 @@ interface Props {
   exclude?: string[]
   /** Transform the URL before it is sent (dev/controlled use only). */
   scrubUrl?: (url: string) => string
+  redactRoutes?: string[]
+  routeTemplates?: boolean
+  routeTemplate?: RouteTemplateResolver
+  router?: RouterLike
   /** Auto-track clicks on elements carrying `data-takt-event` (props read from `data-takt-prop-*`). */
   tagged?: boolean
 }
@@ -51,14 +56,16 @@ const props = withDefaults(defineProps<Props>(), {
   // Vue caste un prop Boolean absent en `false` ; sans ce défaut le kill-switch s'activerait tout seul.
   enabled: true,
   debug: false,
+  routeTemplates: false,
 })
 
 const store = provideTakt()
 let disposers: VoidFunction[] = []
 
 onMounted(() => {
-  const { domain, endpoint, scriptOrigin, respectDnt, excludeLocalhost, spa, outbound, files, track404, enabled, debug, sampleRate, trackQuery, queryParams, exclude, scrubUrl, tagged } = props
-  const takt = createTakt({ domain, endpoint, scriptOrigin, respectDnt, excludeLocalhost, enabled, debug, sampleRate, trackQuery, queryParams, exclude, scrubUrl })
+  const { domain, endpoint, scriptOrigin, respectDnt, excludeLocalhost, spa, outbound, files, track404, enabled, debug, sampleRate, trackQuery, queryParams, exclude, scrubUrl, tagged, redactRoutes, routeTemplates, router } = props
+  const routeTemplate = resolveRouteTemplate(routeTemplates, props.routeTemplate, router)
+  const takt = createTakt({ domain, endpoint, scriptOrigin, respectDnt, excludeLocalhost, enabled, debug, sampleRate, trackQuery, queryParams, exclude, scrubUrl, redactRoutes, routeTemplates, routeTemplate })
   if (spa) disposers.push(takt.enableSpa())
   if (outbound) disposers.push(takt.enableOutbound())
   if (files) disposers.push(takt.enableFiles(Array.isArray(files) ? files : undefined))

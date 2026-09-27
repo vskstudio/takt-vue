@@ -9,7 +9,7 @@
   {
     "name": "element (gzip, self-contained, plain HTMLElement)",
     "path": "dist/element/index.js",
-    "limit": "4.5 kB",
+    "limit": "4.6 kB",
     "gzip": true
   }
 ]
