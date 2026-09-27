@@ -26,6 +26,10 @@ export function createTaktAnalyticsElement(): CustomElementConstructor {
       const exclude = excludeAttr
         ? excludeAttr.split(',').map((s) => s.trim()).filter(Boolean)
         : undefined
+      const redactRoutesAttr = attr('redact-routes')
+      const redactRoutes = redactRoutesAttr
+        ? redactRoutesAttr.split(',').map((s) => s.trim()).filter(Boolean)
+        : undefined
 
       const takt = createTakt({
         domain: attr('domain') ?? undefined,
@@ -39,6 +43,7 @@ export function createTaktAnalyticsElement(): CustomElementConstructor {
         ...(this.hasAttribute('track-query') ? { trackQuery: truthy(attr('track-query')) } : {}),
         ...(queryParams && queryParams.length > 0 ? { queryParams } : {}),
         ...(exclude && exclude.length > 0 ? { exclude } : {}),
+        ...(redactRoutes && redactRoutes.length > 0 ? { redactRoutes } : {}),
       })
       if (truthy(attr('spa'))) this.disposers.push(takt.enableSpa())
       if (this.hasAttribute('outbound')) this.disposers.push(takt.enableOutbound())
