@@ -7,6 +7,7 @@ vi.mock('@vskstudio/takt-core', () => ({
   pageview: vi.fn(),
   optOut: vi.fn(),
   optIn: vi.fn(),
+  isOptedOut: vi.fn(),
 }))
 
 import { vTaktEvent } from '../src/directives/vTaktEvent'
